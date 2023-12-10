@@ -13,15 +13,36 @@ std::vector<std::string> imagePaths;
 int currentImageIndex = 0;
 
 void LoadImagesFromFolder(const std::string& folderPath) {
+	// Initialize SDL_image
+	int imgFlags = IMG_INIT_JPG | IMG_INIT_PNG | IMG_INIT_TIF;
+	if (!(IMG_Init(imgFlags) & imgFlags)) {
+		std::cerr << "SDL_image could not initialize! SDL_image Error: " << IMG_GetError() << std::endl;
+		return;
+	}
+
 	for (const auto& entry : fs::directory_iterator(folderPath)) {
-		if (fs::is_regular_file(entry) && (entry.path().extension() == ".jpeg" || entry.path().extension() == ".jpg" || entry.path().extension() == ".png" || entry.path().extension() == ".jpeg")) {
-			imagePaths.push_back(entry.path().string());
+		if (fs::is_regular_file(entry)) {
+			// Open the file to check if it's a valid image using SDL_image
+			SDL_RWops* rwops = SDL_RWFromFile(entry.path().string().c_str(), "rb");
+			if (rwops != nullptr) {
+				if (IMG_isPNG(rwops) || IMG_isJPG(rwops) || IMG_isBMP(rwops) ||
+					IMG_isGIF(rwops) || IMG_isICO(rwops) || IMG_isLBM(rwops) ||
+					IMG_isPCX(rwops) || IMG_isPNM(rwops) || IMG_isTIF(rwops) ||
+					IMG_isXCF(rwops) || IMG_isXPM(rwops) || IMG_isXV(rwops)) {
+					imagePaths.push_back(entry.path().string());
+				}
+				SDL_RWclose(rwops);
+			}
 		}
 	}
+
+	// Quit SDL_image
+	IMG_Quit();
 }
 
+
 bool LoadCurrentImage() {
-	if (currentImageIndex >= 0 && currentImageIndex < static_cast<int>(imagePaths.size())) {
+if (currentImageIndex >= 0 && currentImageIndex < static_cast<int>(imagePaths.size())) {
 		SDL_Surface* surface = IMG_Load(imagePaths[currentImageIndex].c_str());
 		if (surface != nullptr) {
 			SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);

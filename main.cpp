@@ -24,7 +24,8 @@ void LoadImagesFromFolder(const std::string& folderPath) {
 		if (fs::is_regular_file(entry)) {
 			// Open the file to check if it's a valid image using SDL_image
 			SDL_RWops* rwops = SDL_RWFromFile(entry.path().string().c_str(), "rb");
-			if (rwops != nullptr) {
+			if (rwops != nullptr) { 
+				// loading all types of extensions for an image
 				if (IMG_isPNG(rwops) || IMG_isJPG(rwops) || IMG_isBMP(rwops) ||
 					IMG_isGIF(rwops) || IMG_isICO(rwops) || IMG_isLBM(rwops) ||
 					IMG_isPCX(rwops) || IMG_isPNM(rwops) || IMG_isTIF(rwops) ||

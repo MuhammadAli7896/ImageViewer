@@ -11,6 +11,8 @@ SDL_Window* window = nullptr;
 SDL_Renderer* renderer = nullptr;
 std::vector<std::string> imagePaths;
 int currentImageIndex = 0;
+const int windowWidth = 800;  // Adjust the window width
+const int windowHeight = 600; // Adjust the window height
 
 void LoadImagesFromFolder(const std::string& folderPath) {
 	// Initialize SDL_image
@@ -69,7 +71,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	// Create a window
-	window = SDL_CreateWindow("Image Viewer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, SDL_WINDOW_SHOWN);
+	window = SDL_CreateWindow("Image Viewer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, SDL_WINDOW_SHOWN);
 	if (window == nullptr) {
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Window creation failed: %s", SDL_GetError());
 		SDL_Quit();
@@ -115,6 +117,21 @@ int main(int argc, char* argv[]) {
 					break;
 				default:
 					break;
+				}
+			}
+			else if (e.type == SDL_MOUSEBUTTONDOWN) {
+				int mouseX, mouseY;
+				SDL_GetMouseState(&mouseX, &mouseY);
+
+				// Check if the mouse click is within the next button area
+				if (mouseX >= windowWidth - 50 && mouseX <= windowWidth && mouseY >= 0 && mouseY <= 50) {
+					currentImageIndex = (currentImageIndex + 1) % imagePaths.size();
+					LoadCurrentImage();
+				}
+				// Check if the mouse click is within the previous button area
+				else if (mouseX >= 0 && mouseX <= 50 && mouseY >= 0 && mouseY <= 50) {
+					currentImageIndex = (currentImageIndex - 1 + imagePaths.size()) % imagePaths.size();
+					LoadCurrentImage();
 				}
 			}
 		}

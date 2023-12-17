@@ -1,10 +1,13 @@
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
+#define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING // Don't remove this line pls comment this
+#include <SDL.h>
+#include <SDL_image.h>
 #include <iostream>
 #include <vector>
-#include <filesystem>
+#include <experimental/filesystem> // Don't remove this line pls comment this
+//#include <filesystem>
 
-namespace fs = std::filesystem;
+namespace fs = std::experimental::filesystem; // Don't remove this line pls comment this
+//namespace fs = std::filesystem;
 
 SDL_Window* window = nullptr;
 SDL_Renderer* renderer = nullptr;
@@ -12,8 +15,12 @@ std::vector<std::string> imagePaths;
 int currentImageIndex = 0;
 const int windowWidth = 800;  // Adjust the window width
 const int windowHeight = 600; // Adjust the window height
+const int size_of_arrows = 50;
+const int gap_in_x = 7;
+const int gap_in_y = 0;
+std::string imageFolder = "C:\\Users\\Dev\\source\\repos\\Classic-Fumigation\\src\\images"; // path for the folder from where the images will be extracted
 
-void LoadImagesFromFolder(const std::string& folderPath) {
+void LoadImagesFromFolder() {
 	// Initialize SDL_image
 	int imgFlags = IMG_INIT_JPG | IMG_INIT_PNG | IMG_INIT_TIF;
 	if (!(IMG_Init(imgFlags) & imgFlags)) {
@@ -21,7 +28,7 @@ void LoadImagesFromFolder(const std::string& folderPath) {
 		return;
 	}
 
-	for (const auto& entry : fs::directory_iterator(folderPath)) {
+	for (const auto& entry : fs::directory_iterator(imageFolder)) {
 		if (fs::is_regular_file(entry)) {
 			// Open the file to check if it's a valid image using SDL_image
 			SDL_RWops* rwops = SDL_RWFromFile(entry.path().string().c_str(), "rb");
@@ -52,7 +59,7 @@ if (currentImageIndex >= 0 && currentImageIndex < static_cast<int>(imagePaths.si
         rect.w = windowWidth; rect.h = windowHeight;
 		if (surface != nullptr) {
             SDL_BlitScaled(surface, NULL, window_surface, &rect);
-//            SDL_BlitSurface(surface, NULL, window_surface, &rect);
+//          SDL_BlitSurface(surface, NULL, window_surface, &rect);
             SDL_UpdateWindowSurface(window);
 //			SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
 //			SDL_FreeSurface(surface);
@@ -69,9 +76,9 @@ if (currentImageIndex >= 0 && currentImageIndex < static_cast<int>(imagePaths.si
     SDL_Surface *arrow_left = IMG_Load("arrow_left.jpg");
 	SDL_Surface *arrow_right = IMG_Load("arrow_right.jpg");
 	SDL_Rect rect;
-	rect.x = 1; rect.y = 300;
+	rect.x = gap_in_x; rect.y = windowHeight / 2 - (size_of_arrows / 2);
 	SDL_BlitSurface(arrow_left, NULL, window_surface, &rect);
-	rect.x = 750;
+	rect.x = windowWidth - size_of_arrows - gap_in_x;
 	SDL_BlitSurface(arrow_right, NULL, window_surface, &rect);
 	SDL_UpdateWindowSurface(window);
 	return false;
@@ -81,11 +88,11 @@ void on_click(SDL_MouseButtonEvent &button, SDL_Surface *window_surface)
 {
     if(button.button == SDL_BUTTON_LEFT)
     {
-        if (button.x >= 0 && button.x<= 50 && button.y >= 300 && button.y <= 350) {
+        if (button.x >= gap_in_x && button.x<= gap_in_x + size_of_arrows && button.y >= (windowHeight / 2 - (size_of_arrows / 2)) && button.y <= (windowHeight / 2 + (size_of_arrows / 2))) {
             currentImageIndex = (currentImageIndex - 1 + imagePaths.size()) % imagePaths.size();
             LoadCurrentImage(window_surface);
         }
-        else if (button.x >= windowWidth - 50 && button.x <= windowWidth && button.y >= 300 && button.y <= 350) {
+        else if (button.x >= windowWidth - size_of_arrows && button.x <= windowWidth && button.y >= (windowHeight / 2 - (size_of_arrows / 2)) && button.y <= (windowHeight / 2 + (size_of_arrows / 2))) {
             currentImageIndex = (currentImageIndex + 1) % imagePaths.size();
             LoadCurrentImage(window_surface);
        }
@@ -119,8 +126,8 @@ int main(int argc, char* argv[]) {
 //	}
 
 	// Load images from a folder
-	std::string imageFolder = "C:\\Users\\fahad\\Pictures\\Saved Pictures"; // path for the folder from where the images will be extracted
-	LoadImagesFromFolder(imageFolder);
+	LoadImagesFromFolder();
+
 	SDL_Surface *window_surface = SDL_GetWindowSurface(window);
 
 	// Load the first image
@@ -152,9 +159,7 @@ int main(int argc, char* argv[]) {
 				}
 			}
 			else if (e.type == SDL_MOUSEBUTTONDOWN) {
-				on_click(e.button, window_surface);
-				// Check if the mouse click is within the next button area
-
+				on_click(e.button, window_surface); // Check if the mouse click is within the next button area
 			}
 		}
 	}

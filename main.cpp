@@ -44,10 +44,15 @@ void LoadImagesFromFolder(const std::string& folderPath) {
 
 
 bool LoadCurrentImage(SDL_Surface *window_surface) {
+
 if (currentImageIndex >= 0 && currentImageIndex < static_cast<int>(imagePaths.size())) {
 		SDL_Surface* surface = IMG_Load(imagePaths[currentImageIndex].c_str());
+		SDL_Rect rect;
+		rect.x = rect.y = 0;
+        rect.w = windowWidth; rect.h = windowHeight;
 		if (surface != nullptr) {
-            SDL_BlitSurface(surface, NULL, window_surface, NULL);
+            SDL_BlitScaled(surface, NULL, window_surface, &rect);
+//            SDL_BlitSurface(surface, NULL, window_surface, &rect);
             SDL_UpdateWindowSurface(window);
 //			SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
 //			SDL_FreeSurface(surface);
@@ -61,6 +66,14 @@ if (currentImageIndex >= 0 && currentImageIndex < static_cast<int>(imagePaths.si
 //			}
 		}
 	}
+    SDL_Surface *arrow_left = IMG_Load("arrow_left.jpg");
+	SDL_Surface *arrow_right = IMG_Load("arrow_right.jpg");
+	SDL_Rect rect;
+	rect.x = 1; rect.y = 300;
+	SDL_BlitSurface(arrow_left, NULL, window_surface, &rect);
+	rect.x = 750;
+	SDL_BlitSurface(arrow_right, NULL, window_surface, &rect);
+	SDL_UpdateWindowSurface(window);
 	return false;
 }
 
@@ -68,7 +81,6 @@ void on_click(SDL_MouseButtonEvent &button, SDL_Surface *window_surface)
 {
     if(button.button == SDL_BUTTON_LEFT)
     {
-        std::cout<< button.x << button.y << std::endl;
         if (button.x >= 0 && button.x<= 50 && button.y >= 300 && button.y <= 350) {
             currentImageIndex = (currentImageIndex - 1 + imagePaths.size()) % imagePaths.size();
             LoadCurrentImage(window_surface);
@@ -96,16 +108,6 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 
-	SDL_Surface *window_surface = SDL_GetWindowSurface(window);
-    SDL_Surface *arrow_left = IMG_Load("arrow_left.jpg");
-	SDL_Surface *arrow_right = IMG_Load("arrow_right.jpg");
-	SDL_Rect rect;
-	rect.x = 1; rect.y = 300;
-	SDL_BlitSurface(arrow_left, NULL, window_surface, &rect);
-	rect.x = 750;
-	SDL_BlitSurface(arrow_right, NULL, window_surface, &rect);
-	SDL_UpdateWindowSurface(window);
-
 
 //	// Create a renderer
 //	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
@@ -119,6 +121,7 @@ int main(int argc, char* argv[]) {
 	// Load images from a folder
 	std::string imageFolder = "C:\\Users\\fahad\\Pictures\\Saved Pictures"; // path for the folder from where the images will be extracted
 	LoadImagesFromFolder(imageFolder);
+	SDL_Surface *window_surface = SDL_GetWindowSurface(window);
 
 	// Load the first image
 	if (!imagePaths.empty()) {

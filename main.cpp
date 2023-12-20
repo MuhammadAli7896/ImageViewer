@@ -18,14 +18,13 @@ const int gap_in_x = 2;
 const int gap_in_y = 0;
 int windowHeight = 0;
 int windowWidth = 0;
-std::string imageFolder = "C:\\Users\\Dev\\source\\repos\\Classic-Fumigation\\src\\imaes"; // path for the folder from where the images will be extracted
+std::string imageFolder = "C:\\Users\\Dev\\source\\repos\\Classic-Fumigation\\src\\images"; // path for the folder from where the images will be extracted
 
 void LoadImagesFromFolder() {
 
 	// Check if the specified folder exists
 	if (!fs::exists(imageFolder) || !fs::is_directory(imageFolder)) {
-		// If not, use the project's directory as the default folder path
-		// Adjust the subfolder path based on your project's structure
+		// If the folder doesn't exist then it will go to the subfolder which is in the same directory
 		imageFolder = fs::current_path().string() + "/images"; // Use "images" as the default subfolder
 		std::cout << "Specified folder not found. Using default folder path: " << imageFolder << std::endl;
 	}
@@ -120,7 +119,8 @@ bool LoadCurrentImage(SDL_Surface* window_surface) {
 			}
 		}
 		else if (imageWidth <= (windowWidth * min_size) || imageHeight <= (windowHeight * min_size))
-		{ // if the image is so small then increment its dimensions
+		{ 
+			// if the image is so small then increase its dimensions
 			imageHeight *= increase_size;
 			imageWidth *= increase_size;
 		}
@@ -132,15 +132,6 @@ bool LoadCurrentImage(SDL_Surface* window_surface) {
 		rect.y = posY;
 		rect.w = imageWidth;
 		rect.h = imageHeight;
-
-		if (imageHeight >= windowHeight - 40)
-		{
-			imageHeight = windowHeight - 60;
-		}
-		if (imageWidth >= windowWidth - 40)
-		{
-			imageWidth = windowWidth - 60;
-		}
 
 		if (surface != nullptr) {
 			// Clear the window
@@ -190,8 +181,8 @@ void on_click(SDL_MouseButtonEvent &button, SDL_Surface *window_surface)
 }
 
 int main(int argc, char* argv[]) {
-	// Initialize SDL
 
+	// Initialize SDL
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL initialization failed: %s", SDL_GetError());
 		return -1;

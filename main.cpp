@@ -1,6 +1,7 @@
 #define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING // Don't remove this line pls comment this
 #include <SDL.h>
 #include <SDL_image.h>
+#include <SDL_ttf.h>
 #include <iostream>
 #include "LinkedList.h"
 #include <experimental/filesystem> // Don't remove this line pls comment this
@@ -32,6 +33,9 @@ SDL_Surface* arrow_left_default = nullptr;
 SDL_Surface* arrow_right_default = nullptr;
 SDL_Surface* arrow_left_hover = nullptr;
 SDL_Surface* arrow_right_hover = nullptr;
+// Declare TTF font and color
+TTF_Font* font = nullptr;
+SDL_Color textColor = { 255, 255, 255, 255 };  // White color
 
 
 void LoadImagesFromFolder() {
@@ -108,6 +112,37 @@ void UpdateArrows(SDL_Surface* window_surface) {
 
 	// Update the window surface
 	SDL_UpdateWindowSurface(window);
+}
+
+void RenderText(SDL_Surface* window_surface, const std::string& text) {
+	if (font == nullptr) {
+		std::cerr << "Font not loaded! Cannot render text." << std::endl;
+		return;
+	}
+
+	// Render text surface
+	SDL_Surface* textSurface = TTF_RenderText_Solid(font, text.c_str(), textColor);
+
+	if (textSurface == nullptr) {
+		std::cerr << "Unable to render text surface! SDL_ttf Error: " << TTF_GetError() << std::endl;
+		return;
+	}
+
+	// Create rect to hold text
+	SDL_Rect textRect;
+	textRect.x = (windowWidth - textSurface->w) / 2;  // Center horizontally
+	textRect.y = 10;  // 10 pixels from the top
+	textRect.w = textSurface->w;
+	textRect.h = textSurface->h;
+
+	// Blit the text surface onto the window_surface
+	SDL_BlitSurface(textSurface, nullptr, window_surface, &textRect);
+
+	// Update the window surface
+	SDL_UpdateWindowSurface(window);
+
+	// Free the text surface
+	SDL_FreeSurface(textSurface);
 }
 
 bool LoadCurrentImage2(SDL_Surface* window_surface)
@@ -194,6 +229,9 @@ bool LoadCurrentImage2(SDL_Surface* window_surface)
 		rect.x = windowWidth - size_of_arrows - gap_in_x;
 		SDL_BlitSurface(arrow_right, nullptr, window_surface, &rect);
 
+		// Render text
+		RenderText(window_surface, currentImg->data);
+
 		//Update the window surface
 		SDL_UpdateWindowSurface(window);
 
@@ -255,6 +293,8 @@ void on_double_click(SDL_MouseButtonEvent& button, SDL_Surface* window_surface) 
 
 
 
+
+
 int main(int argc, char* argv[]) {
 
 	// Initialize SDL
@@ -263,6 +303,13 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 
+	// Initialize SDL_ttf
+	if (TTF_Init() == -1) {
+		std::cerr << "SDL_ttf could not initialize! SDL_ttf Error: " << TTF_GetError() << std::endl;
+		// Handle initialization error as needed
+	}
+
+
 	// Get the screen size
 	SDL_DisplayMode dm;
 	if (SDL_GetCurrentDisplayMode(0, &dm) != 0) {
@@ -270,6 +317,15 @@ int main(int argc, char* argv[]) {
 		IMG_Quit();
 		SDL_Quit();
 		return -1;
+	}
+
+	// Load a font
+	std::string FontsPath = fs::current_path().string() + "/Roboto/Roboto-Black.ttf";
+	font = TTF_OpenFont(FontsPath.c_str(), 28); // Replace with the path to your font and desired font size
+
+	if (font == nullptr) {
+		std::cerr << "Failed to load font! SDL_ttf Error: " << TTF_GetError() << std::endl;
+		// Handle font loading error as needed
 	}
 
 
@@ -298,6 +354,8 @@ int main(int argc, char* argv[]) {
 	if (ImagePaths.length) {
 		LoadCurrentImage2(window_surface);
 	}
+
+	RenderText(window_surface, currentImg->data);
 
 	// Main loop
 	bool quit = false;
@@ -341,9 +399,17 @@ int main(int argc, char* argv[]) {
 	SDL_FreeSurface(arrow_left_hover);
 	SDL_FreeSurface(arrow_right_hover);
 
+	// Close the font
+	if (font != nullptr) {
+		TTF_CloseFont(font);
+		font = nullptr;
+	}
+
 	// Clean up
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
+	// Quit SDL_ttf
+	TTF_Quit();
 	SDL_Quit();
 
 	return 0;

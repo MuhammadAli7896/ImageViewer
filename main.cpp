@@ -19,6 +19,13 @@ const int gap_in_y = 0;
 int windowHeight = 0;
 int windowWidth = 0;
 std::string imageFolder = "C:\\Users\\Dev\\source\\repos\\Classic-Fumigation\\src\\images"; // path for the folder from where the images will be extracted
+// Define a variable to track the zoom state
+bool zoomedIn = false;
+int originalWidth = 0;
+int originalHeight = 0;
+// Declare surface with a global scope
+SDL_Surface* surface = nullptr;
+
 
 void LoadImagesFromFolder() {
 
@@ -94,7 +101,7 @@ void LoadImagesFromFolder() {
 
 bool LoadCurrentImage(SDL_Surface* window_surface) {
 	if (currentImageIndex >= 0 && currentImageIndex < static_cast<int>(imagePaths.size())) {
-		SDL_Surface* surface = IMG_Load(imagePaths[currentImageIndex].c_str());
+		surface = IMG_Load(imagePaths[currentImageIndex].c_str());
 		SDL_Rect rect;
 
 		// Calculate the destination rectangle position and dimensions
@@ -127,6 +134,17 @@ bool LoadCurrentImage(SDL_Surface* window_surface) {
 
 		int posX = (windowWidth - imageWidth) / 2;
 		int posY = (windowHeight - imageHeight) / 2;
+
+		// Save the original dimensions for zooming
+		if (!zoomedIn) {
+			originalWidth = imageWidth;
+			originalHeight = imageHeight;
+		}
+		/*else
+		{
+			imageHeight *= 1.4;
+			imageWidth *= 1.4;
+		}*/
 
 		rect.x = posX;
 		rect.y = posY;
@@ -179,6 +197,52 @@ void on_click(SDL_MouseButtonEvent &button, SDL_Surface *window_surface)
        }
     }
 }
+
+void on_double_click(SDL_MouseButtonEvent& button, SDL_Surface* window_surface) {
+	if (button.button == SDL_BUTTON_LEFT && button.clicks == 2) {
+		// Toggle the zoom state
+		zoomedIn = !zoomedIn;
+
+	//	if (zoomedIn) {
+	//		// Zoom in by increasing the image size (e.g., doubling its dimensions)
+	//		int zoomedWidth = originalWidth * 2;
+	//		int zoomedHeight = originalHeight * 2;
+
+	//		// Recenter the zoomed image
+	//		int posX = (windowWidth - zoomedWidth) / 2;
+	//		int posY = (windowHeight - zoomedHeight) / 2;
+
+	//		SDL_Rect rect = { posX, posY, zoomedWidth, zoomedHeight };
+
+	//		// Clear the window
+	//		SDL_FillRect(window_surface, nullptr, SDL_MapRGB(window_surface->format, 0, 0, 0));
+
+	//		// Blit the scaled image onto the window_surface
+	//		SDL_BlitScaled(surface, nullptr, window_surface, &rect);
+
+	//		// Blit the arrows onto the window_surface
+	//		SDL_Surface* arrow_left = IMG_Load("arrow_left.jpg");
+	//		SDL_Surface* arrow_right = IMG_Load("arrow_right.jpg");
+	//		rect.x = gap_in_x;
+	//		rect.y = windowHeight / 2 - (size_of_arrows / 2);
+	//		SDL_BlitSurface(arrow_left, nullptr, window_surface, &rect);
+	//		rect.x = windowWidth - size_of_arrows - gap_in_x;
+	//		SDL_BlitSurface(arrow_right, nullptr, window_surface, &rect);
+
+	//		// Update the window surface
+	//		SDL_UpdateWindowSurface(window);
+
+	//		SDL_FreeSurface(arrow_left);
+	//		SDL_FreeSurface(arrow_right);
+	//	}
+	//	else {
+	//		// Zoom out by loading the original image
+	//		LoadCurrentImage(window_surface);
+	//	}
+	}
+}
+
+
 
 int main(int argc, char* argv[]) {
 
@@ -263,6 +327,7 @@ int main(int argc, char* argv[]) {
 			}
 			else if (e.type == SDL_MOUSEBUTTONDOWN) {
 				on_click(e.button, window_surface); // Check if the mouse click is within the next button area
+				on_double_click(e.button, window_surface); // Check for double-click events
 			}
 		}
 	}

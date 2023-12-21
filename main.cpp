@@ -2,7 +2,7 @@
 #include <SDL.h>
 #include <SDL_image.h>
 #include <iostream>
-#include <vector>
+#include "LinkedList.h"
 #include <experimental/filesystem> // Don't remove this line pls comment this
 //#include <filesystem>
 
@@ -11,10 +11,10 @@ namespace fs = std::experimental::filesystem; // Don't remove this line pls comm
 
 SDL_Window* window = nullptr;
 SDL_Renderer* renderer = nullptr;
-std::vector<std::string> imagePaths;
-int currentImageIndex = 0;
+LinkedList<std::string> ImagePaths;
+Node<std::string> *currentImg;
 const int size_of_arrows = 50;
-const int gap_in_x = 0;
+const int gap_in_x = 0; 
 const int gap_in_y = 0;
 int windowHeight = 0;
 int windowWidth = 0;
@@ -60,13 +60,14 @@ void LoadImagesFromFolder() {
 					IMG_isGIF(rwops) || IMG_isICO(rwops) || IMG_isLBM(rwops) ||
 					IMG_isPCX(rwops) || IMG_isPNM(rwops) || IMG_isTIF(rwops) ||
 					IMG_isXCF(rwops) || IMG_isXPM(rwops) || IMG_isXV(rwops)) {
-					imagePaths.push_back(entry.path().string());
+					//imagePaths.push_back(entry.path().string());
+					ImagePaths.append(entry.path().string());
 				}
 				SDL_RWclose(rwops);
 			}
 		}
 	}
-
+	currentImg = ImagePaths.head;
 	// Quit SDL_image
 	IMG_Quit();
 }
@@ -109,103 +110,112 @@ void UpdateArrows(SDL_Surface* window_surface) {
 	SDL_UpdateWindowSurface(window);
 }
 
-
-bool LoadCurrentImage(SDL_Surface* window_surface) {
-	if (currentImageIndex >= 0 && currentImageIndex < static_cast<int>(imagePaths.size())) {
-		surface = IMG_Load(imagePaths[currentImageIndex].c_str());
-		SDL_Rect rect;
-
-		// Calculate the destination rectangle position and dimensions
-		int imageWidth = surface->w;
-		int imageHeight = surface->h;
-		float min_size = 0.5;
-		float increase_size = 2.5;
-
-		// Check if the image dimensions are greater than the screen size - 30
-		if (imageWidth >= (windowWidth - 30) || imageHeight >= (windowHeight - 30)) {
-			// Decrease image dimensions
-			float aspectRatio = static_cast<float>(imageWidth) / static_cast<float>(imageHeight);
-
-			if (aspectRatio >= 1.0f) {
-				imageWidth = windowWidth - 120;
-				//imageHeight = static_cast<int>(imageWidth / aspectRatio);
-				imageHeight = windowHeight - 120;
-			}
-			else {
-				imageHeight = windowHeight;
-				imageWidth = static_cast<int>(imageHeight * aspectRatio);
-			}
-		}
-		//else if (imageWidth <= (windowWidth * min_size) || imageHeight <= (windowHeight * min_size))
-		//{ 
-		//	// if the image is so small then increase its dimensions
-		//	imageHeight *= increase_size;
-		//	imageWidth *= increase_size;
-		//}
-
-		int posX = (windowWidth - imageWidth) / 2;
-		int posY = (windowHeight - imageHeight) / 2;
-
-		// Save the original dimensions for zooming
-		if (!zoomedIn) {
-			originalWidth = imageWidth;
-			originalHeight = imageHeight;
-		}
-		/*else
-		{
-			imageHeight *= 1.4;
-			imageWidth *= 1.4;
-		}*/
-
-		rect.x = posX;
-		rect.y = posY;
-		rect.w = imageWidth;
-		rect.h = imageHeight;
-
-		if (surface != nullptr) {
-			// Clear the window
-			SDL_FillRect(window_surface, nullptr, SDL_MapRGB(window_surface->format, 0, 0, 0));
-
-			// Blit the scaled image onto the window_surface
-			SDL_BlitScaled(surface, nullptr, window_surface, &rect);
-
-			// Blit the arrows onto the window_surface
-			SDL_Surface* arrow_left = IMG_Load("arrow_left_hover.jpg");
-			SDL_Surface* arrow_right = IMG_Load("arrow_right_hover.jpg");
-			rect.x = gap_in_x;
-			rect.y = windowHeight / 2 - (size_of_arrows / 2);
-			SDL_BlitSurface(arrow_left, nullptr, window_surface, &rect);
-
-			rect.x = windowWidth - size_of_arrows - gap_in_x;
-			SDL_BlitSurface(arrow_right, nullptr, window_surface, &rect);
-
-			//Update the window surface
-			SDL_UpdateWindowSurface(window);
-
-			SDL_FreeSurface(arrow_left);
-			SDL_FreeSurface(arrow_right);
-			SDL_FreeSurface(surface);
-
-			return true;
-		}
+bool LoadCurrentImage2(SDL_Surface* window_surface)
+{	
+	// Check if currentImg is nullptr
+	if (currentImg == nullptr) {
+		std::cerr << "Error: currentImg is nullptr." << std::endl;
+		return false;
 	}
 
-	return false;
+	surface = IMG_Load(currentImg->data.c_str());
+
+	// Check if surface is nullptr
+	if (surface == nullptr) {
+		std::cerr << "Error loading image: " << IMG_GetError() << std::endl;
+		return false;
+	}
+
+	SDL_Rect rect;
+
+	// Calculate the destination rectangle position and dimensions
+	int imageWidth = surface->w;
+	int imageHeight = surface->h;
+	float min_size = 0.5;
+	float increase_size = 2.5;
+
+	// Check if the image dimensions are greater than the screen size - 30
+	if (imageWidth >= (windowWidth - 30) || imageHeight >= (windowHeight - 30)) {
+		// Decrease image dimensions
+		float aspectRatio = static_cast<float>(imageWidth) / static_cast<float>(imageHeight);
+
+		if (aspectRatio >= 1.0f) {
+			imageWidth = static_cast<int>(windowWidth - (100 * aspectRatio));
+			//imageHeight = static_cast<int>(imageWidth / aspectRatio);
+			imageHeight = static_cast<int>(windowHeight - (50 * aspectRatio));
+		}
+		else {
+			imageHeight = windowHeight;
+			imageWidth = static_cast<int>(imageHeight * aspectRatio);
+		}
+	}
+	//else if (imageWidth <= (windowWidth * min_size) || imageHeight <= (windowHeight * min_size))
+	//{ 
+	//	// if the image is so small then increase its dimensions
+	//	imageHeight *= increase_size;
+	//	imageWidth *= increase_size;
+	//}
+
+	int posX = (windowWidth - imageWidth) / 2;
+	int posY = (windowHeight - imageHeight) / 2;
+
+	// Save the original dimensions for zooming
+	if (!zoomedIn) {
+		originalWidth = imageWidth;
+		originalHeight = imageHeight;
+	}
+	else
+	{
+		imageHeight *= 1.4;
+		imageWidth *= 1.4;
+		posX = (windowWidth - imageWidth) / 2;
+		posY = (windowHeight - imageHeight) / 2;
+	}
+
+	rect.x = posX;
+	rect.y = posY;
+	rect.w = imageWidth;
+	rect.h = imageHeight;
+
+	if (surface != nullptr) {
+		// Clear the window
+		SDL_FillRect(window_surface, nullptr, SDL_MapRGB(window_surface->format, 0, 0, 0));
+
+		// Blit the scaled image onto the window_surface
+		SDL_BlitScaled(surface, nullptr, window_surface, &rect);
+
+		// Blit the arrows onto the window_surface
+		SDL_Surface* arrow_left = IMG_Load("arrow_left_hover.jpg");
+		SDL_Surface* arrow_right = IMG_Load("arrow_right_hover.jpg");
+		rect.x = gap_in_x;
+		rect.y = windowHeight / 2 - (size_of_arrows / 2);
+		SDL_BlitSurface(arrow_left, nullptr, window_surface, &rect);
+
+		rect.x = windowWidth - size_of_arrows - gap_in_x;
+		SDL_BlitSurface(arrow_right, nullptr, window_surface, &rect);
+
+		//Update the window surface
+		SDL_UpdateWindowSurface(window);
+
+		SDL_FreeSurface(arrow_left);
+		SDL_FreeSurface(arrow_right);
+		SDL_FreeSurface(surface);
+
+		return true;
+	}
 }
-
-
 
 void on_click(SDL_MouseButtonEvent &button, SDL_Surface *window_surface)
 {
     if(button.button == SDL_BUTTON_LEFT)
     {
         if (button.x >= gap_in_x && button.x<= gap_in_x + size_of_arrows && button.y >= (windowHeight / 2 - (size_of_arrows / 2)) && button.y <= (windowHeight / 2 + (size_of_arrows / 2))) {
-            currentImageIndex = (currentImageIndex - 1 + imagePaths.size()) % imagePaths.size();
-            LoadCurrentImage(window_surface);
+			currentImg = currentImg->prev;
+            LoadCurrentImage2(window_surface);
         }
         else if (button.x >= windowWidth - size_of_arrows && button.x <= windowWidth && button.y >= (windowHeight / 2 - (size_of_arrows / 2)) && button.y <= (windowHeight / 2 + (size_of_arrows / 2))) {
-            currentImageIndex = (currentImageIndex + 1) % imagePaths.size();
-            LoadCurrentImage(window_surface);
+			currentImg = currentImg->next;
+            LoadCurrentImage2(window_surface);
        }
     }
 }
@@ -239,43 +249,7 @@ void on_double_click(SDL_MouseButtonEvent& button, SDL_Surface* window_surface) 
 	if (button.button == SDL_BUTTON_LEFT && button.clicks == 2) {
 		// Toggle the zoom state
 		zoomedIn = !zoomedIn;
-
-	//	if (zoomedIn) {
-	//		// Zoom in by increasing the image size (e.g., doubling its dimensions)
-	//		int zoomedWidth = originalWidth * 2;
-	//		int zoomedHeight = originalHeight * 2;
-
-	//		// Recenter the zoomed image
-	//		int posX = (windowWidth - zoomedWidth) / 2;
-	//		int posY = (windowHeight - zoomedHeight) / 2;
-
-	//		SDL_Rect rect = { posX, posY, zoomedWidth, zoomedHeight };
-
-	//		// Clear the window
-	//		SDL_FillRect(window_surface, nullptr, SDL_MapRGB(window_surface->format, 0, 0, 0));
-
-	//		// Blit the scaled image onto the window_surface
-	//		SDL_BlitScaled(surface, nullptr, window_surface, &rect);
-
-	//		// Blit the arrows onto the window_surface
-	//		SDL_Surface* arrow_left = IMG_Load("arrow_left.jpg");
-	//		SDL_Surface* arrow_right = IMG_Load("arrow_right.jpg");
-	//		rect.x = gap_in_x;
-	//		rect.y = windowHeight / 2 - (size_of_arrows / 2);
-	//		SDL_BlitSurface(arrow_left, nullptr, window_surface, &rect);
-	//		rect.x = windowWidth - size_of_arrows - gap_in_x;
-	//		SDL_BlitSurface(arrow_right, nullptr, window_surface, &rect);
-
-	//		// Update the window surface
-	//		SDL_UpdateWindowSurface(window);
-
-	//		SDL_FreeSurface(arrow_left);
-	//		SDL_FreeSurface(arrow_right);
-	//	}
-	//	else {
-	//		// Zoom out by loading the original image
-	//		LoadCurrentImage(window_surface);
-	//	}
+		LoadCurrentImage2(window_surface);
 	}
 }
 
@@ -298,6 +272,7 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 
+
 	windowWidth = dm.w;
 	windowHeight = dm.h - 60;
 
@@ -314,32 +289,14 @@ int main(int argc, char* argv[]) {
 	// Load arrow images
 	LoadArrowImages();
 
-	// Create a window
-	/*window = SDL_CreateWindow("Image Viewer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, SDL_WINDOW_SHOWN);
-	if (window == nullptr) {
-		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Window creation failed: %s", SDL_GetError());
-		SDL_Quit();
-		return -1;
-	}*/
-
-
-//	// Create a renderer
-//	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-//	if (renderer == nullptr) {
-//		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Renderer creation failed: %s", SDL_GetError());
-//		SDL_DestroyWindow(window);
-//		SDL_Quit();
-//		return -1;
-//	}
-
 	// Load images from a folder
 	LoadImagesFromFolder();
 
 	SDL_Surface *window_surface = SDL_GetWindowSurface(window);
 
 	// Load the first image
-	if (!imagePaths.empty()) {
-		LoadCurrentImage(window_surface);
+	if (ImagePaths.length) {
+		LoadCurrentImage2(window_surface);
 	}
 
 	// Main loop
@@ -354,12 +311,12 @@ int main(int argc, char* argv[]) {
 			else if (e.type == SDL_KEYDOWN) {
 				switch (e.key.keysym.sym) {
 				case SDLK_LEFT:
-					currentImageIndex = (currentImageIndex - 1 + imagePaths.size()) % imagePaths.size();
-					LoadCurrentImage(window_surface);
+					currentImg = currentImg->prev;
+					LoadCurrentImage2(window_surface);
 					break;
 				case SDLK_RIGHT:
-					currentImageIndex = (currentImageIndex + 1) % imagePaths.size();
-					LoadCurrentImage(window_surface);
+					currentImg = currentImg->next;
+					LoadCurrentImage2(window_surface);
 					break;
 				default:
 					break;

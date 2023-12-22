@@ -3,6 +3,7 @@
 #include <SDL_image.h>
 #include <SDL_ttf.h>
 #include <iostream>
+#include <string>
 #include "LinkedList.h"
 #include <experimental/filesystem> // Don't remove this line pls comment this
 //#include <filesystem>
@@ -35,7 +36,9 @@ SDL_Surface* arrow_left_hover = nullptr;
 SDL_Surface* arrow_right_hover = nullptr;
 // Declare TTF font and color
 TTF_Font* font = nullptr;
-SDL_Color textColor = { 255, 255, 255, 255 };  // White color
+SDL_Color textColor = { 161, 158, 160, 0.8 };  // White color
+int index = 0;
+std::string value;
 
 
 void LoadImagesFromFolder() {
@@ -114,38 +117,45 @@ void UpdateArrows(SDL_Surface* window_surface) {
 	SDL_UpdateWindowSurface(window);
 }
 
-void RenderText(SDL_Surface* window_surface, const std::string& text) {
+void RenderText(SDL_Surface* window_surface, const std::string& text1, const std::string& text2) {
 	if (font == nullptr) {
 		std::cerr << "Font not loaded! Cannot render text." << std::endl;
 		return;
 	}
 
 	// Render text surface
-	SDL_Surface* textSurface = TTF_RenderText_Solid(font, text.c_str(), textColor);
+	SDL_Surface* textSurface1 = TTF_RenderText_Solid(font, text1.c_str(), textColor);
+	SDL_Surface* textSurface2 = TTF_RenderText_Solid(font, text2.c_str(), textColor);
 
-	if (textSurface == nullptr) {
+	if (textSurface1 == nullptr) {
 		std::cerr << "Unable to render text surface! SDL_ttf Error: " << TTF_GetError() << std::endl;
 		return;
 	}
 
 	// Create rect to hold text
-	SDL_Rect textRect;
-	textRect.x = (windowWidth - textSurface->w) / 2;  // Center horizontally
-	textRect.y = 10;  // 10 pixels from the top
-	textRect.w = textSurface->w;
-	textRect.h = textSurface->h;
+	SDL_Rect textRect1, textRect2;
+	textRect1.x = (windowWidth - textSurface1->w) / 2;  // Center horizontally
+	textRect1.y = windowHeight - textSurface1->h - 5;  // 10 pixels from the top
+	textRect1.w = textSurface1->w;
+	textRect1.h = textSurface1->h;
+	textRect2.x = (windowWidth - textSurface2->w) - 15; // Center horizontally
+	textRect2.y = windowHeight - textSurface2->h - 5;  // 10 pixels from the top
+	textRect2.w = textSurface2->w;
+	textRect2.h = textSurface2->h;
 
 	// Blit the text surface onto the window_surface
-	SDL_BlitSurface(textSurface, nullptr, window_surface, &textRect);
+	SDL_BlitSurface(textSurface1, nullptr, window_surface, &textRect1);
+	SDL_BlitSurface(textSurface2, nullptr, window_surface, &textRect2);
 
 	// Update the window surface
 	SDL_UpdateWindowSurface(window);
 
 	// Free the text surface
-	SDL_FreeSurface(textSurface);
+	SDL_FreeSurface(textSurface1);
+	SDL_FreeSurface(textSurface2);
 }
 
-bool LoadCurrentImage2(SDL_Surface* window_surface)
+bool LoadCurrentImage(SDL_Surface* window_surface)
 {	
 	// Check if currentImg is nullptr
 	if (currentImg == nullptr) {
@@ -229,8 +239,12 @@ bool LoadCurrentImage2(SDL_Surface* window_surface)
 		rect.x = windowWidth - size_of_arrows - gap_in_x;
 		SDL_BlitSurface(arrow_right, nullptr, window_surface, &rect);
 
-		// Render text
-		RenderText(window_surface, currentImg->data);
+		value = std::to_string(index + 1);
+		value = value + " / " + std::to_string(ImagePaths.length);
+
+		// Render Text
+		RenderText(window_surface, currentImg->data.substr(imageFolder.length() + 1), value);
+
 
 		//Update the window surface
 		SDL_UpdateWindowSurface(window);
@@ -249,11 +263,13 @@ void on_click(SDL_MouseButtonEvent &button, SDL_Surface *window_surface)
     {
         if (button.x >= gap_in_x && button.x<= gap_in_x + size_of_arrows && button.y >= (windowHeight / 2 - (size_of_arrows / 2)) && button.y <= (windowHeight / 2 + (size_of_arrows / 2))) {
 			currentImg = currentImg->prev;
-            LoadCurrentImage2(window_surface);
+			index = (index - 1 + ImagePaths.length) % ImagePaths.length;
+            LoadCurrentImage(window_surface);
         }
         else if (button.x >= windowWidth - size_of_arrows && button.x <= windowWidth && button.y >= (windowHeight / 2 - (size_of_arrows / 2)) && button.y <= (windowHeight / 2 + (size_of_arrows / 2))) {
 			currentImg = currentImg->next;
-            LoadCurrentImage2(window_surface);
+			index = (index + 1) % ImagePaths.length;
+            LoadCurrentImage(window_surface);
        }
     }
 }
@@ -286,13 +302,14 @@ void on_hover(SDL_Window* window) {
 void on_double_click(SDL_MouseButtonEvent& button, SDL_Surface* window_surface) {
 	if (button.button == SDL_BUTTON_LEFT && button.clicks == 2) {
 		// Toggle the zoom state
-		zoomedIn = !zoomedIn;
-		LoadCurrentImage2(window_surface);
+		if (!(button.x >= gap_in_x && button.x <= gap_in_x + size_of_arrows && button.y >= (windowHeight / 2 - (size_of_arrows / 2)) && button.y <= (windowHeight / 2 + (size_of_arrows / 2))) && !(button.x >= windowWidth - size_of_arrows && button.x <= windowWidth && button.y >= (windowHeight / 2 - (size_of_arrows / 2)) && button.y <= (windowHeight / 2 + (size_of_arrows / 2))))
+		{
+			zoomedIn = !zoomedIn;
+			LoadCurrentImage(window_surface);
+		}
+		
 	}
 }
-
-
-
 
 
 int main(int argc, char* argv[]) {
@@ -320,8 +337,8 @@ int main(int argc, char* argv[]) {
 	}
 
 	// Load a font
-	std::string FontsPath = fs::current_path().string() + "/Roboto/Roboto-Black.ttf";
-	font = TTF_OpenFont(FontsPath.c_str(), 28); // Replace with the path to your font and desired font size
+	std::string FontsPath = fs::current_path().string() + "/Fonts/Inter/static/Inter-Medium.ttf";
+	font = TTF_OpenFont(FontsPath.c_str(), 22); // Replace with the path to your font and desired font size
 
 	if (font == nullptr) {
 		std::cerr << "Failed to load font! SDL_ttf Error: " << TTF_GetError() << std::endl;
@@ -331,6 +348,8 @@ int main(int argc, char* argv[]) {
 
 	windowWidth = dm.w;
 	windowHeight = dm.h - 60;
+
+	//std::cout << windowHeight << "    " << windowWidth << std::endl;
 
 
 	// Create a window
@@ -352,10 +371,12 @@ int main(int argc, char* argv[]) {
 
 	// Load the first image
 	if (ImagePaths.length) {
-		LoadCurrentImage2(window_surface);
+		LoadCurrentImage(window_surface);
 	}
-
-	RenderText(window_surface, currentImg->data);
+	
+	value = std::to_string(index + 1);
+	value = value + " / " + std::to_string(ImagePaths.length);
+	RenderText(window_surface, currentImg->data.substr(imageFolder.length() + 1), value);
 
 	// Main loop
 	bool quit = false;
@@ -370,11 +391,13 @@ int main(int argc, char* argv[]) {
 				switch (e.key.keysym.sym) {
 				case SDLK_LEFT:
 					currentImg = currentImg->prev;
-					LoadCurrentImage2(window_surface);
+					index = (index - 1 + ImagePaths.length) % ImagePaths.length;
+					LoadCurrentImage(window_surface);
 					break;
 				case SDLK_RIGHT:
 					currentImg = currentImg->next;
-					LoadCurrentImage2(window_surface);
+					index = (index + 1) % ImagePaths.length;
+					LoadCurrentImage(window_surface);
 					break;
 				default:
 					break;

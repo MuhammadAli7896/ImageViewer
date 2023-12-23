@@ -28,7 +28,8 @@ int originalHeight = 0;
 // Declare surface with a global scope
 SDL_Surface* surface = nullptr;
 // Declare a boolean variable to track whether the cursor is over the arrows
-bool cursorOverArrows = false;
+bool cursorOverArrowLeft = false;
+bool cursorOverArrowRight = false;
 // Declare arrow surface pointers with global scope
 SDL_Surface* arrow_left_default = nullptr;
 SDL_Surface* arrow_right_default = nullptr;
@@ -101,8 +102,8 @@ void UpdateArrows(SDL_Surface* window_surface) {
 	SDL_Rect rect;
 
 	// Load appropriate arrow images based on hover state
-	SDL_Surface* current_left_arrow = cursorOverArrows ? arrow_left_hover : arrow_left_default;
-	SDL_Surface* current_right_arrow = cursorOverArrows ? arrow_right_hover : arrow_right_default;
+	SDL_Surface* current_left_arrow = cursorOverArrowLeft ? arrow_left_hover : arrow_left_default;
+	SDL_Surface* current_right_arrow = cursorOverArrowRight ? arrow_right_hover : arrow_right_default;
 
 	// Blit the left arrow onto the window_surface
 	rect.x = gap_in_x;
@@ -230,14 +231,30 @@ bool LoadCurrentImage(SDL_Surface* window_surface)
 		SDL_BlitScaled(surface, nullptr, window_surface, &rect);
 
 		// Blit the arrows onto the window_surface
-		SDL_Surface* arrow_left = IMG_Load("arrow_left_hover.jpg");
-		SDL_Surface* arrow_right = IMG_Load("arrow_right_hover.jpg");
+		SDL_Surface* arrow_left = IMG_Load("arrow_left.png");
+		SDL_Surface* arrow_right = IMG_Load("arrow_right.png");
+		SDL_Surface* arrow_left_hover = IMG_Load("arrow_left_hover.jpg");
+		SDL_Surface* arrow_right_hover = IMG_Load("arrow_right_hover.jpg");
 		rect.x = gap_in_x;
 		rect.y = windowHeight / 2 - (size_of_arrows / 2);
-		SDL_BlitSurface(arrow_left, nullptr, window_surface, &rect);
-
-		rect.x = windowWidth - size_of_arrows - gap_in_x;
-		SDL_BlitSurface(arrow_right, nullptr, window_surface, &rect);
+		if (!(cursorOverArrowLeft || cursorOverArrowRight))
+		{
+			SDL_BlitSurface(arrow_left, nullptr, window_surface, &rect);
+			rect.x = windowWidth - size_of_arrows - gap_in_x;
+			SDL_BlitSurface(arrow_right, nullptr, window_surface, &rect);
+		}
+		else if(cursorOverArrowLeft)
+		{
+			SDL_BlitSurface(arrow_left_hover, nullptr, window_surface, &rect);
+			rect.x = windowWidth - size_of_arrows - gap_in_x;
+			SDL_BlitSurface(arrow_right, nullptr, window_surface, &rect);
+		}
+		else {
+			SDL_BlitSurface(arrow_left, nullptr, window_surface, &rect);
+			rect.x = windowWidth - size_of_arrows - gap_in_x;
+			SDL_BlitSurface(arrow_right_hover, nullptr, window_surface, &rect);
+		}
+		
 
 		value = std::to_string(index + 1);
 		value = value + " / " + std::to_string(ImagePaths.length);
@@ -251,6 +268,8 @@ bool LoadCurrentImage(SDL_Surface* window_surface)
 
 		SDL_FreeSurface(arrow_left);
 		SDL_FreeSurface(arrow_right);
+		SDL_FreeSurface(arrow_left_hover);
+		SDL_FreeSurface(arrow_right_hover);
 		SDL_FreeSurface(surface);
 
 		return true;
@@ -287,10 +306,11 @@ void on_hover(SDL_Window* window) {
 	p.y = y;
 
 	// checking if it is over arrows
-	cursorOverArrows = (SDL_PointInRect(&p, &leftArrowRect) || SDL_PointInRect(&p, &rightArrowRect));
+	cursorOverArrowLeft = SDL_PointInRect(&p, &leftArrowRect);
+	cursorOverArrowRight = SDL_PointInRect(&p, &rightArrowRect);
 
 	// Set cursor to pointer if over arrows
-	if (cursorOverArrows) {
+	if (cursorOverArrowLeft || cursorOverArrowRight) {
 		SDL_SetCursor(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND));
 	}
 	else {

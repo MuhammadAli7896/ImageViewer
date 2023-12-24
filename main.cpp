@@ -169,11 +169,9 @@ bool LoadCurrentImage(SDL_Surface* window_surface)
 
 	SDL_Rect rect;
 
-	// Calculate the destination rectangle position and dimensions
+	// getting the dimensions of the image
 	int imageWidth = surface->w;
 	int imageHeight = surface->h;
-	float min_size = 0.5;
-	float increase_size = 2.5;
 
 	// Check if the image dimensions are greater than the screen size - 30
 	if (imageWidth >= (windowWidth - 30) || imageHeight >= (windowHeight - 30)) {
@@ -192,16 +190,20 @@ bool LoadCurrentImage(SDL_Surface* window_surface)
 
 	int posX = (windowWidth - imageWidth) / 2;
 	int posY = (windowHeight - imageHeight) / 2;
-
+	
+	// increasing size by 1.4 times if it is zoomed in
 	if (zoomedIn) {
 		imageHeight *= 1.4;
 		imageWidth *= 1.4;
-		posX = (windowWidth - imageWidth) / 2;
+		posX = (windowWidth - imageWidth) / 2; 
 		posY = (windowHeight - imageHeight) / 2;
 	}
 
+	// setting the x and y of rect where image will be displayed
 	rect.x = posX;
 	rect.y = posY;
+
+	// setting the width and height of rect for the current image
 	rect.w = imageWidth;
 	rect.h = imageHeight;
 
@@ -217,8 +219,11 @@ bool LoadCurrentImage(SDL_Surface* window_surface)
 		SDL_Surface* arrow_right = IMG_Load("arrow_right.png");
 		SDL_Surface* arrow_left_hover = IMG_Load("arrow_left_hover.jpg");
 		SDL_Surface* arrow_right_hover = IMG_Load("arrow_right_hover.jpg");
+
+		// setting rect x and y where the image of arrows will be displayed 
 		rect.x = 0;
 		rect.y = windowHeight / 2 - (size_of_arrows / 2);
+
 		if (!(cursorOverArrowLeft || cursorOverArrowRight))
 		{
 			// if cursor is not on the arrows render the default images of arrow

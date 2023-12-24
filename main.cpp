@@ -1,32 +1,26 @@
-#define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING // Don't remove this line pls comment this
+#define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING // to silent the warning of depracation of filesystem class that in C++ 17 it is removed from experimental class
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
 #include <iostream>
 #include <string>
 #include "LinkedList.h"
-#include <experimental/filesystem> // Don't remove this line pls comment this
-//#include <filesystem>
+#include <experimental/filesystem> // used to extract the images from the folder
 
-namespace fs = std::experimental::filesystem; // Don't remove this line pls comment this
-//namespace fs = std::filesystem;
+namespace fs = std::experimental::filesystem; 
 
+// global variables for window and surface so that they can be used in any function
 SDL_Window* window = nullptr;
-SDL_Renderer* renderer = nullptr;
+SDL_Surface* surface = nullptr;
+// LinkedList in which all image paths are stored
 LinkedList<std::string> ImagePaths;
-Node<std::string> *currentImg;
-const int size_of_arrows = 50;
-const int gap_in_x = 0; 
-const int gap_in_y = 0;
+Node<std::string> *currentImg; // image path of the current image which is to be displayed
+const int size_of_arrows = 50; // height and width of arrows
 int windowHeight = 0;
 int windowWidth = 0;
-std::string imageFolder = "C:\\Users\\Dev\\Pictures"; // path for the folder from where the images will be extracted
+std::string imageFolder = "C:\\Users\\Dev\\Pictures"; // Path for the folder from where the images will be extracted
 // Define a variable to track the zoom state
 bool zoomedIn = false;
-int originalWidth = 0;
-int originalHeight = 0;
-// Declare surface with a global scope
-SDL_Surface* surface = nullptr;
 // Declare a boolean variable to track whether the cursor is over the arrows
 bool cursorOverArrowLeft = false;
 bool cursorOverArrowRight = false;
@@ -37,9 +31,10 @@ SDL_Surface* arrow_left_hover = nullptr;
 SDL_Surface* arrow_right_hover = nullptr;
 // Declare TTF font and color
 TTF_Font* font = nullptr;
-SDL_Color textColor = { 161, 158, 160, 0.8 };  // White color
+SDL_Color textColor = { 161, 158, 160, 0.8 };  // Gray color
+// These are used for the number of the image
 int index = 0;
-std::string value;
+std::string value; // The final text that is displayed on the bottom right of screen
 
 
 void LoadImagesFromFolder() {
@@ -68,13 +63,13 @@ void LoadImagesFromFolder() {
 					IMG_isGIF(rwops) || IMG_isICO(rwops) || IMG_isLBM(rwops) ||
 					IMG_isPCX(rwops) || IMG_isPNM(rwops) || IMG_isTIF(rwops) ||
 					IMG_isXCF(rwops) || IMG_isXPM(rwops) || IMG_isXV(rwops)) {
-					//imagePaths.push_back(entry.path().string());
 					ImagePaths.append(entry.path().string());
 				}
 				SDL_RWclose(rwops);
 			}
 		}
 	}
+	// Assigning current image the path of first image in the folder
 	currentImg = ImagePaths.head;
 	// Quit SDL_image
 	IMG_Quit();
@@ -106,12 +101,12 @@ void UpdateArrows(SDL_Surface* window_surface) {
 	SDL_Surface* current_right_arrow = cursorOverArrowRight ? arrow_right_hover : arrow_right_default;
 
 	// Blit the left arrow onto the window_surface
-	rect.x = gap_in_x;
+	rect.x = 0;
 	rect.y = windowHeight / 2 - (size_of_arrows / 2);
 	SDL_BlitSurface(current_left_arrow, nullptr, window_surface, &rect);
 
 	// Blit the right arrow onto the window_surface
-	rect.x = windowWidth - size_of_arrows - gap_in_x;
+	rect.x = windowWidth - size_of_arrows;
 	SDL_BlitSurface(current_right_arrow, nullptr, window_surface, &rect);
 
 	// Update the window surface
@@ -134,7 +129,7 @@ void RenderText(SDL_Surface* window_surface, const std::string& text1, const std
 	}
 
 	// Create rect to hold text
-	SDL_Rect textRect1, textRect2;
+	SDL_Rect textRect1, textRect2; // 1 for the image name and 2 for the image number / number of images in the folder
 	textRect1.x = (windowWidth - textSurface1->w) / 2;  // Center horizontally
 	textRect1.y = windowHeight - textSurface1->h - 5;  // 10 pixels from the top
 	textRect1.w = textSurface1->w;
@@ -187,7 +182,6 @@ bool LoadCurrentImage(SDL_Surface* window_surface)
 
 		if (aspectRatio >= 1.0f) {
 			imageWidth = static_cast<int>(windowWidth - (100 * aspectRatio));
-			//imageHeight = static_cast<int>(imageWidth / aspectRatio);
 			imageHeight = static_cast<int>(windowHeight - (50 * aspectRatio));
 		}
 		else {
@@ -195,23 +189,11 @@ bool LoadCurrentImage(SDL_Surface* window_surface)
 			imageWidth = static_cast<int>(imageHeight * aspectRatio);
 		}
 	}
-	//else if (imageWidth <= (windowWidth * min_size) || imageHeight <= (windowHeight * min_size))
-	//{ 
-	//	// if the image is so small then increase its dimensions
-	//	imageHeight *= increase_size;
-	//	imageWidth *= increase_size;
-	//}
 
 	int posX = (windowWidth - imageWidth) / 2;
 	int posY = (windowHeight - imageHeight) / 2;
 
-	// Save the original dimensions for zooming
-	if (!zoomedIn) {
-		originalWidth = imageWidth;
-		originalHeight = imageHeight;
-	}
-	else
-	{
+	if (zoomedIn) {
 		imageHeight *= 1.4;
 		imageWidth *= 1.4;
 		posX = (windowWidth - imageWidth) / 2;
@@ -235,37 +217,40 @@ bool LoadCurrentImage(SDL_Surface* window_surface)
 		SDL_Surface* arrow_right = IMG_Load("arrow_right.png");
 		SDL_Surface* arrow_left_hover = IMG_Load("arrow_left_hover.jpg");
 		SDL_Surface* arrow_right_hover = IMG_Load("arrow_right_hover.jpg");
-		rect.x = gap_in_x;
+		rect.x = 0;
 		rect.y = windowHeight / 2 - (size_of_arrows / 2);
 		if (!(cursorOverArrowLeft || cursorOverArrowRight))
 		{
+			// if cursor is not on the arrows render the default images of arrow
 			SDL_BlitSurface(arrow_left, nullptr, window_surface, &rect);
-			rect.x = windowWidth - size_of_arrows - gap_in_x;
+			rect.x = windowWidth - size_of_arrows;
 			SDL_BlitSurface(arrow_right, nullptr, window_surface, &rect);
 		}
 		else if(cursorOverArrowLeft)
 		{
+			// if over left arrow render the hover image of left arrow and default right arrow
 			SDL_BlitSurface(arrow_left_hover, nullptr, window_surface, &rect);
-			rect.x = windowWidth - size_of_arrows - gap_in_x;
+			rect.x = windowWidth - size_of_arrows;
 			SDL_BlitSurface(arrow_right, nullptr, window_surface, &rect);
 		}
 		else {
+			// else render image of right hover arrow and default left arrow
 			SDL_BlitSurface(arrow_left, nullptr, window_surface, &rect);
-			rect.x = windowWidth - size_of_arrows - gap_in_x;
+			rect.x = windowWidth - size_of_arrows;
 			SDL_BlitSurface(arrow_right_hover, nullptr, window_surface, &rect);
 		}
 		
-
+		// taking the index of the image and adding one to it
 		value = std::to_string(index + 1);
-		value = value + " / " + std::to_string(ImagePaths.length);
+		value = value + " / " + std::to_string(ImagePaths.length); // final text 
 
 		// Render Text
-		RenderText(window_surface, currentImg->data.substr(imageFolder.length() + 1), value);
-
+		RenderText(window_surface, currentImg->data.substr(imageFolder.length() + 1), value); // currentImg data is sliced to remove the folder and directory address and just show image name
 
 		//Update the window surface
 		SDL_UpdateWindowSurface(window);
 
+		// Free the images and surfaces
 		SDL_FreeSurface(arrow_left);
 		SDL_FreeSurface(arrow_right);
 		SDL_FreeSurface(arrow_left_hover);
@@ -280,11 +265,13 @@ void on_click(SDL_MouseButtonEvent &button, SDL_Surface *window_surface)
 {
     if(button.button == SDL_BUTTON_LEFT)
     {
-        if (button.x >= gap_in_x && button.x<= gap_in_x + size_of_arrows && button.y >= (windowHeight / 2 - (size_of_arrows / 2)) && button.y <= (windowHeight / 2 + (size_of_arrows / 2))) {
+		// for left arrow
+        if (button.x >= 0 && button.x<= size_of_arrows && button.y >= (windowHeight / 2 - (size_of_arrows / 2)) && button.y <= (windowHeight / 2 + (size_of_arrows / 2))) {
 			currentImg = currentImg->prev;
 			index = (index - 1 + ImagePaths.length) % ImagePaths.length;
             LoadCurrentImage(window_surface);
         }
+		// for right arrow
         else if (button.x >= windowWidth - size_of_arrows && button.x <= windowWidth && button.y >= (windowHeight / 2 - (size_of_arrows / 2)) && button.y <= (windowHeight / 2 + (size_of_arrows / 2))) {
 			currentImg = currentImg->next;
 			index = (index + 1) % ImagePaths.length;
@@ -295,8 +282,8 @@ void on_click(SDL_MouseButtonEvent &button, SDL_Surface *window_surface)
 
 void on_hover(SDL_Window* window) {
 	// Check if the cursor is over the arrows
-	SDL_Rect leftArrowRect = { gap_in_x, windowHeight / 2 - (size_of_arrows / 2), size_of_arrows, size_of_arrows };
-	SDL_Rect rightArrowRect = { windowWidth - size_of_arrows - gap_in_x, windowHeight / 2 - (size_of_arrows / 2), size_of_arrows, size_of_arrows };
+	SDL_Rect leftArrowRect = {0, windowHeight / 2 - (size_of_arrows / 2), size_of_arrows, size_of_arrows };
+	SDL_Rect rightArrowRect = { windowWidth - size_of_arrows, windowHeight / 2 - (size_of_arrows / 2), size_of_arrows, size_of_arrows };
 
 	int x, y;
 	// getting mouse poition
@@ -321,8 +308,8 @@ void on_hover(SDL_Window* window) {
 
 void on_double_click(SDL_MouseButtonEvent& button, SDL_Surface* window_surface) {
 	if (button.button == SDL_BUTTON_LEFT && button.clicks == 2) {
-		// Toggle the zoom state
-		if (!(button.x >= gap_in_x && button.x <= gap_in_x + size_of_arrows && button.y >= (windowHeight / 2 - (size_of_arrows / 2)) && button.y <= (windowHeight / 2 + (size_of_arrows / 2))) && !(button.x >= windowWidth - size_of_arrows && button.x <= windowWidth && button.y >= (windowHeight / 2 - (size_of_arrows / 2)) && button.y <= (windowHeight / 2 + (size_of_arrows / 2))))
+		// Toggle the zoom state if it is in the position of arrows
+		if (!(button.x >= 0 && button.x <= size_of_arrows && button.y >= (windowHeight / 2 - (size_of_arrows / 2)) && button.y <= (windowHeight / 2 + (size_of_arrows / 2))) && !(button.x >= windowWidth - size_of_arrows && button.x <= windowWidth && button.y >= (windowHeight / 2 - (size_of_arrows / 2)) && button.y <= (windowHeight / 2 + (size_of_arrows / 2))))
 		{
 			zoomedIn = !zoomedIn;
 			LoadCurrentImage(window_surface);
@@ -358,18 +345,15 @@ int main(int argc, char* argv[]) {
 
 	// Load a font
 	std::string FontsPath = fs::current_path().string() + "/Fonts/Inter/static/Inter-Medium.ttf";
-	font = TTF_OpenFont(FontsPath.c_str(), 22); // Replace with the path to your font and desired font size
+	font = TTF_OpenFont(FontsPath.c_str(), 22); // 22 is the font size
 
 	if (font == nullptr) {
 		std::cerr << "Failed to load font! SDL_ttf Error: " << TTF_GetError() << std::endl;
 		// Handle font loading error as needed
 	}
 
-
 	windowWidth = dm.w;
 	windowHeight = dm.h - 60;
-
-	//std::cout << windowHeight << "    " << windowWidth << std::endl;
 
 
 	// Create a window
@@ -394,9 +378,11 @@ int main(int argc, char* argv[]) {
 		LoadCurrentImage(window_surface);
 	}
 	
+	// same procedure to render the text on the first image
+	// its name and index out of total number of images
 	value = std::to_string(index + 1);
 	value = value + " / " + std::to_string(ImagePaths.length);
-	RenderText(window_surface, currentImg->data.substr(imageFolder.length() + 1), value);
+	RenderText(window_surface, currentImg->data.substr(imageFolder.length() + 1), value); // currentImg data is sliced to remove the folder and directory address and just show image name
 
 	// Main loop
 	bool quit = false;
@@ -410,11 +396,13 @@ int main(int argc, char* argv[]) {
 			else if (e.type == SDL_KEYDOWN) {
 				switch (e.key.keysym.sym) {
 				case SDLK_LEFT:
+					// if left arrow key is pressed
 					currentImg = currentImg->prev;
 					index = (index - 1 + ImagePaths.length) % ImagePaths.length;
 					LoadCurrentImage(window_surface);
 					break;
 				case SDLK_RIGHT:
+					// if right arrow key is pressed
 					currentImg = currentImg->next;
 					index = (index + 1) % ImagePaths.length;
 					LoadCurrentImage(window_surface);
@@ -449,7 +437,6 @@ int main(int argc, char* argv[]) {
 	}
 
 	// Clean up
-	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	// Quit SDL_ttf
 	TTF_Quit();

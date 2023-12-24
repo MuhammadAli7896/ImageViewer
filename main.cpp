@@ -356,9 +356,10 @@ int main(int argc, char* argv[]) {
 		std::cerr << "Failed to load font! SDL_ttf Error: " << TTF_GetError() << std::endl;
 		// Handle font loading error as needed
 	}
-
+	
+	// setting the window dimensions equal to screen dimensions
 	windowWidth = dm.w;
-	windowHeight = dm.h - 60;
+	windowHeight = dm.h - 60; // height is decreased by 60 pixels so the title bar is visible of the window
 
 
 	// Create a window

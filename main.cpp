@@ -1,13 +1,12 @@
-#define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING // to silent the warning of depracation of filesystem class that in C++ 17 it is removed from experimental class
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
 #include <iostream>
 #include <string>
 #include "LinkedList.h"
-#include <experimental/filesystem> // used to extract the images from the folder
+#include <filesystem> // used to extract the images from the folder
 
-namespace fs = std::experimental::filesystem; 
+namespace fs = std::filesystem; 
 
 // global variables for window and surface so that they can be used in any function
 SDL_Window* window = nullptr;
